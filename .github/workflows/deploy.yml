@@ -1,0 +1,65 @@
+name: Assemble & Deploy
+
+on:
+  # Triggered by game repos or main-site repo via workflow_dispatch
+  workflow_dispatch:
+    inputs:
+      trigger_repo:
+        description: "Repo that triggered this deploy (informational)"
+        required: false
+        default: "manual"
+
+  # Also run on push to main (e.g., games.yaml changes)
+  push:
+    branches: [main]
+    paths:
+      - "games.yaml"
+      - "scripts/**"
+      - "render.yaml"
+      - ".github/workflows/deploy.yml"
+
+permissions:
+  contents: write  # Needed to push to deploy branch
+
+jobs:
+  assemble-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout orchestrator
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install yq
+        uses: mikefarah/yq@master
+
+      - name: Run assemble script
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: ./scripts/assemble.sh
+
+      - name: Copy render.yaml to assembled root
+        run: cp render.yaml assembled/render.yaml
+
+      - name: Push to deploy branch
+        run: |
+          cd assembled
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Deploy: triggered by ${{ github.event.inputs.trigger_repo || 'push' }} at $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          git push --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:deploy
+
+      - name: Summary
+        run: |
+          echo "### Deploy complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger:** ${{ github.event.inputs.trigger_repo || 'push to main' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`$(git -C assembled rev-parse --short HEAD)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Files:** $(find assembled -type f | wc -l)" >> $GITHUB_STEP_SUMMARY

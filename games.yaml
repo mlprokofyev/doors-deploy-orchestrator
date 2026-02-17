@@ -1,0 +1,15 @@
+# Deploy manifest — single source of truth for all deployed sites.
+# Adding a new game = adding 3 lines under `games:`.
+
+main_site:
+  repo: mlprokofyev/doors-web
+  build_cmd: npm run build
+  dist_dir: dist
+  path: /
+
+games:
+  - number: 1
+    repo: mlprokofyev/perun-web-game-demo
+    build_cmd: npm run build
+    dist_dir: dist
+    path: /doors/1/
