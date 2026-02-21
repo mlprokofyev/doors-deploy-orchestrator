@@ -1,0 +1,35 @@
+# Render Blueprint — Static Site configuration.
+#
+# Setup options:
+#   A) Import this blueprint via Render Dashboard → Blueprints → New Blueprint
+#   B) Create a Static Site manually and configure settings to match this file
+#
+# Render watches the `deploy` branch. The GitHub Actions workflow pushes
+# the pre-built assembled/ directory there. Render just serves it.
+
+services:
+  - type: web
+    name: doors-site
+    env: static
+    buildCommand: "echo 'pre-built — assembled by GitHub Actions'"
+    staticPublishPath: ./
+    pullRequestPreviewsEnabled: false
+    envVars: []
+    headers:
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /doors/*/assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+    routes:
+      # SPA fallback for each game scene.
+      # Game scenes are canvas SPAs — all sub-paths under /doors/N/
+      # should serve the game's index.html.
+      - type: rewrite
+        source: /doors/1/*
+        destination: /doors/1/index.html
+      # Add a rewrite rule for each new game:
+      # - type: rewrite
+      #   source: /doors/2/*
+      #   destination: /doors/2/index.html
