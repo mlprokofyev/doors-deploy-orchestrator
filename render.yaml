@@ -29,6 +29,9 @@ services:
       - type: rewrite
         source: /doors/1/*
         destination: /doors/1/index.html
+      - type: rewrite
+        source: /doors/4/*
+        destination: /doors/4/index.html
       # Add a rewrite rule for each new game:
       # - type: rewrite
       #   source: /doors/2/*

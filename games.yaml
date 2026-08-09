@@ -13,3 +13,8 @@ games:
     build_cmd: npm run build
     dist_dir: dist
     path: /doors/1/
+  - number: 4
+    repo: mlprokofyev/door4-unity
+    build_cmd: npm run build
+    dist_dir: dist
+    path: /doors/4/
