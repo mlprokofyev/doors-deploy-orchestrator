@@ -1,0 +1,38 @@
+{
+  "assets": [
+    { "id": "tile_grass",              "path": "assets/sprites/tiles/ground_snow_many_thick.png" },
+
+    { "id": "char_idle",               "path": "assets/sprites/characters/player_idle.png" },
+    { "id": "char_walk_south",         "path": "assets/sprites/characters/player_walk_south.png" },
+    { "id": "char_walk_north",         "path": "assets/sprites/characters/player_walk_north.png" },
+    { "id": "char_walk_east",          "path": "assets/sprites/characters/player_walk_east.png" },
+    { "id": "char_walk_west",          "path": "assets/sprites/characters/player_walk_west.png" },
+    { "id": "char_walk_south_east",    "path": "assets/sprites/characters/player_walk_south_east.png" },
+    { "id": "char_walk_south_west",    "path": "assets/sprites/characters/player_walk_south_west.png" },
+    { "id": "char_walk_north_east",    "path": "assets/sprites/characters/player_walk_north_east.png" },
+    { "id": "char_walk_north_west",    "path": "assets/sprites/characters/player_walk_north_west.png" },
+
+    { "id": "obj_tree_med_snow",       "path": "assets/sprites/objects/tree_snow_med_1.png" },
+    { "id": "obj_tree_pine_snow",      "path": "assets/sprites/objects/tree_pine_snow.png" },
+    { "id": "obj_tree_big",            "path": "assets/sprites/objects/tree_big.png" },
+    { "id": "obj_tree_snow_big_1",     "path": "assets/sprites/objects/tree_snow_big_1.png" },
+    { "id": "obj_stone",               "path": "assets/sprites/objects/stone_on_grass.png" },
+    { "id": "obj_house",               "path": "assets/sprites/objects/house_snow_many.png" },
+
+    { "id": "obj_campfire",             "path": "assets/sprites/objects/campfire.png" },
+    { "id": "obj_sticks_snow",          "path": "assets/sprites/objects/sticks_snow.png" },
+    { "id": "obj_sticks_snow_rotated", "path": "assets/sprites/objects/sticks_snow_rotated.png" },
+
+    { "id": "dog_walk_west",           "path": "assets/sprites/characters/dog_walk_west.png" },
+    { "id": "dog_idle",                "path": "assets/sprites/characters/dog_idle.png" },
+    { "id": "dog_sleeping",            "path": "assets/sprites/characters/dog_sleeping.png" },
+
+    { "id": "obj_barrel_snow",          "path": "assets/sprites/objects/barrel_snow.png" },
+    { "id": "obj_note_paper",           "path": "assets/sprites/objects/paper.png" },
+
+    { "id": "obj_door",                 "path": "assets/sprites/objects/door.png" },
+
+    { "id": "item_pink_lighter",       "path": "assets/sprites/objects/lighter.png" },
+    { "id": "item_pink_lighter_world", "path": "assets/sprites/objects/lighter.png" }
+  ]
+}

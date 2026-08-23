@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <title>Door to Young Perun</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: monospace;
+    }
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #game-container *, #game-container *::before, #game-container *::after {
+      -webkit-tap-highlight-color: transparent;
+    }
+    canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      display: block;
+    }
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      z-index: 9999;
+    }
+    #loading .loading-title {
+      color: #e0e0e0;
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(20px, 5vw, 32px);
+      letter-spacing: 0.1em;
+      margin-bottom: 24px;
+    }
+    #loading .loading-text {
+      color: #666;
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(8px, 2vw, 12px);
+      letter-spacing: 0.05em;
+    }
+    #hud {
+      position: absolute;
+      top: 34px;
+      left: 12px;
+      color: #d0c8a0;
+      font-size: 13px;
+      line-height: 1.6;
+      pointer-events: none;
+      z-index: 10;
+      background: rgba(6, 8, 16, 0.65);
+      border: 1px solid rgba(180, 170, 140, 0.12);
+      border-radius: 4px;
+      padding: 6px 10px;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+    }
+    #debug-overlay {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      color: #a0a0a0;
+      font-size: 11px;
+      line-height: 1.5;
+      pointer-events: none;
+      z-index: 10;
+      background: rgba(6, 8, 16, 0.65);
+      border: 1px solid rgba(180, 170, 140, 0.12);
+      border-radius: 4px;
+      padding: 6px 10px;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+    }
+    #quest-hud {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      pointer-events: none;
+      text-align: right;
+      z-index: 10;
+      max-width: 280px;
+      background: rgba(6, 8, 16, 0.72);
+      border: 1px solid rgba(180, 170, 140, 0.18);
+      border-radius: 5px;
+      padding: 10px 14px;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+    }
+    .quest-hud-title {
+      color: #f0e8c8;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 4px;
+      letter-spacing: 0.5px;
+    }
+    .quest-hud-obj {
+      color: #d0c8a0;
+      font-size: 12px;
+      margin-left: 8px;
+      line-height: 1.7;
+    }
+    .quest-hud-obj.done {
+      color: #8aa870;
+      text-decoration: line-through;
+      text-decoration-color: rgba(138, 168, 112, 0.4);
+    }
+    /* ── Inventory quick-preview (below quest HUD) ──── */
+    #inv-preview {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #c8c0a0;
+      background: rgba(10, 12, 18, 0.45);
+      border: 1px solid rgba(180, 170, 140, 0.12);
+      border-radius: 5px;
+      padding: 8px 10px;
+      pointer-events: none;
+      z-index: 10;
+      display: none;
+    }
+    .inv-preview-items {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .inv-preview-slot {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background: rgba(180, 170, 140, 0.08);
+      border: 1px solid rgba(180, 170, 140, 0.12);
+      border-radius: 3px;
+      padding: 3px 5px;
+    }
+    .inv-preview-icon {
+      image-rendering: pixelated;
+      display: block;
+    }
+    .inv-preview-icon-fallback {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      text-align: center;
+      line-height: 20px;
+      font-size: 12px;
+      color: #d0c8a0;
+    }
+    .inv-preview-count {
+      font-size: 11px;
+      color: #d0c8a0;
+    }
+    /* 🎒 / 📜 buttons — hidden on desktop */
+    .inv-preview-bag,
+    .inv-preview-questlog {
+      display: none;
+    }
+    .inv-preview-hint {
+      font-size: 10px;
+      color: #908870;
+      text-align: center;
+    }
+    .inv-preview-key {
+      display: inline-block;
+      background: rgba(180, 170, 140, 0.15);
+      border: 1px solid rgba(180, 170, 140, 0.25);
+      border-radius: 3px;
+      padding: 0 4px;
+      font-size: 10px;
+      color: #c8c0a0;
+      line-height: 16px;
+    }
+    /* Desktop: hide entirely when empty */
+    #inv-preview.inv-preview-empty {
+      display: none !important;
+    }
+    #controls-hint {
+      position: absolute;
+      bottom: 14px;
+      right: 14px;
+      display: flex;
+      gap: 8px;
+      color: rgba(180, 170, 140, 0.6);
+      font-size: 10px;
+      line-height: 1;
+      pointer-events: none;
+      z-index: 10;
+      background: rgba(6, 8, 16, 0.5);
+      border: 1px solid rgba(180, 170, 140, 0.10);
+      border-radius: 4px;
+      padding: 5px 10px;
+      text-shadow: none;
+    }
+    #controls-hint .hint-key {
+      display: inline-block;
+      background: rgba(180, 170, 140, 0.12);
+      border: 1px solid rgba(180, 170, 140, 0.25);
+      border-radius: 3px;
+      padding: 1px 4px;
+      margin-right: 3px;
+      font-size: 10px;
+      line-height: 1.5;
+      color: rgba(200, 190, 160, 0.7);
+    }
+
+    /* ── Touch / keyboard hint swap ──────────────────────── */
+    .touch-hint { display: none; }
+    @media (pointer: coarse) and (hover: none) {
+      #controls-hint { display: none !important; }
+      #interact-prompt { display: none !important; }
+      .keyboard-hint { display: none !important; }
+      .touch-hint { display: inline !important; }
+      #back-to-hub {
+        z-index: 60;
+        font-size: 14px;
+        padding: 10px 16px;
+        border-radius: 8px;
+      }
+      .inv-preview-hint { display: none !important; }
+      #inv-preview {
+        display: flex !important;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        pointer-events: auto;
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 0;
+      }
+      #inv-preview.inv-preview-empty {
+        display: flex !important;
+      }
+      .inv-preview-items {
+        display: flex;
+        gap: 4px;
+        flex-wrap: nowrap;
+        margin-bottom: 0;
+      }
+      .inv-preview-bag,
+      .inv-preview-questlog {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: rgba(20, 18, 14, 0.55);
+        border: 1.5px solid rgba(180, 170, 140, 0.25);
+        font-size: 20px;
+        flex-shrink: 0;
+        transition: transform 0.08s, opacity 0.08s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .inv-preview-bag:active,
+      .inv-preview-questlog:active {
+        transform: scale(0.9);
+        opacity: 1;
+      }
+      .inv-preview-slot {
+        background: rgba(20, 18, 14, 0.55);
+        border-color: rgba(180, 170, 140, 0.2);
+        padding: 4px 6px;
+        border-radius: 6px;
+        -webkit-tap-highlight-color: transparent;
+      }
+    }
+
+    /* Close button used by overlays on touch */
+    .overlay-close {
+      position: absolute;
+      top: 10px; right: 14px;
+      width: 36px; height: 36px;
+      border: none; background: none;
+      color: rgba(200, 190, 160, 0.6);
+      font-size: 22px;
+      cursor: pointer;
+      display: none;
+      align-items: center; justify-content: center;
+      z-index: 5;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+    .overlay-close:hover,
+    .overlay-close:active {
+      background: rgba(200, 190, 160, 0.12);
+      color: rgba(200, 190, 160, 0.9);
+    }
+    @media (pointer: coarse) and (hover: none) {
+      .overlay-close { display: flex; }
+    }
+
+    /* ── Controls help overlay ─────────────────────────── */
+    #controls-help-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 100;
+      display: none;
+      justify-content: center;
+      pointer-events: auto;
+    }
+    .controls-help-box {
+      min-width: 300px;
+      max-width: 400px;
+      background: rgba(8, 10, 18, 0.94);
+      border: 2px solid rgba(180, 170, 140, 0.35);
+      border-radius: 6px;
+      padding: 18px 24px 14px;
+      font-family: monospace;
+      color: #d0c8a0;
+    }
+    .controls-help-title {
+      font-size: 13px;
+      color: #a89868;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-align: center;
+    }
+    .controls-help-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .controls-help-section {
+      font-size: 10px;
+      color: #706850;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 8px;
+      margin-bottom: 2px;
+      padding-bottom: 2px;
+      border-bottom: 1px solid rgba(180, 170, 140, 0.10);
+    }
+    .controls-help-section:first-child {
+      margin-top: 0;
+    }
+    .controls-help-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #b0a880;
+      padding: 2px 0;
+    }
+    .controls-help-row .key {
+      display: inline-block;
+      background: rgba(180, 170, 140, 0.15);
+      border: 1px solid rgba(180, 170, 140, 0.4);
+      border-radius: 3px;
+      padding: 1px 6px;
+      font-size: 11px;
+      line-height: 1.6;
+      color: #d0c8a0;
+      min-width: 24px;
+      text-align: center;
+    }
+    .controls-help-desc {
+      color: #c0b890;
+      flex: 1;
+    }
+    .controls-help-hint {
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(180, 170, 140, 0.15);
+      font-size: 11px;
+      color: #706850;
+      text-align: center;
+    }
+    .controls-help-hint .key {
+      display: inline-block;
+      background: rgba(180, 170, 140, 0.15);
+      border: 1px solid rgba(180, 170, 140, 0.4);
+      border-radius: 3px;
+      padding: 0 5px;
+      margin-right: 3px;
+      font-size: 10px;
+      line-height: 1.6;
+    }
+
+    /* ── Back to hub link ─────────────────────────────── */
+    #back-to-hub {
+      position: absolute;
+      top: 10px;
+      left: 12px;
+      z-index: 10000;
+      color: rgba(180, 170, 140, 0.45);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 11px;
+      text-decoration: none;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border: 1px solid rgba(180, 170, 140, 0.15);
+      border-radius: 3px;
+      background: rgba(6, 8, 16, 0.6);
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+    #back-to-hub:hover {
+      color: #d0c8a0;
+      border-color: rgba(180, 170, 140, 0.4);
+      background: rgba(6, 8, 16, 0.85);
+    }
+
+    /* ── Interact prompt ─────────────────────────────── */
+    #interact-prompt {
+      position: absolute;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #d0c8a0;
+      font-family: monospace;
+      font-size: 13px;
+      padding: 6px 14px;
+      background: rgba(8, 10, 18, 0.85);
+      border: 1px solid rgba(180, 170, 140, 0.3);
+      border-radius: 4px;
+      z-index: 50;
+      pointer-events: none;
+      text-shadow: none;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      display: none;
+    }
+    #interact-prompt .key {
+      display: inline-block;
+      background: rgba(180, 170, 140, 0.15);
+      border: 1px solid rgba(180, 170, 140, 0.4);
+      border-radius: 3px;
+      padding: 0 5px;
+      margin: 0 2px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    /* ── Dialog overlay ──────────────────────────────── */
+    #dialog-container {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: none;          /* toggled by DialogUI */
+      justify-content: center;
+      padding: 0 20px calc(24px + env(safe-area-inset-bottom, 0px));
+      pointer-events: auto;
+    }
+    .dialog-box {
+      position: relative;
+      width: 100%;
+      max-width: 680px;
+      background: rgba(8, 10, 18, 0.94);
+      border: 2px solid rgba(180, 170, 140, 0.35);
+      border-radius: 6px;
+      padding: 18px 22px 14px;
+      font-family: monospace;
+      color: #d0c8a0;
+    }
+    .dialog-speaker {
+      font-size: 13px;
+      color: #a89868;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .dialog-controls {
+      display: flex;
+      gap: 18px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(180, 170, 140, 0.15);
+      font-size: 11px;
+      color: #706850;
+    }
+    .dialog-controls .key {
+      display: inline-block;
+      background: rgba(180, 170, 140, 0.15);
+      border: 1px solid rgba(180, 170, 140, 0.4);
+      border-radius: 3px;
+      padding: 0 5px;
+      margin-right: 3px;
+      font-size: 10px;
+      line-height: 1.6;
+    }
+    .dialog-text {
+      font-size: 15px;
+      line-height: 1.7;
+      margin-bottom: 14px;
+      color: #e8e0c0;
+      font-style: italic;
+    }
+    .dialog-choices {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .dialog-choice {
+      cursor: pointer;
+      padding: 7px 12px;
+      margin: 3px 0;
+      border-left: 3px solid transparent;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+      font-size: 14px;
+      font-family: monospace;
+      color: #b0a880;
+    }
+    .dialog-choice:hover,
+    .dialog-choice.selected {
+      background: rgba(180, 170, 140, 0.08);
+      border-left-color: #d0c8a0;
+      color: #f0e8c0;
+    }
+    .dialog-choice-pointer {
+      display: inline-block;
+      width: 14px;
+      margin-right: 6px;
+      font-size: 13px;
+      color: #d0c8a0;
+      opacity: 0;
+      transition: opacity 0.12s;
+    }
+    .dialog-choice.selected .dialog-choice-pointer {
+      opacity: 1;
+    }
+    .dialog-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin-right: 4px;
+      vertical-align: middle;
+      position: relative;
+      top: -1px;
+    }
+    .dialog-tag--quest {
+      background: rgba(210, 180, 60, 0.2);
+      border: 1px solid rgba(210, 180, 60, 0.4);
+      color: #e8d060;
+    }
+    .dialog-tag--action {
+      background: rgba(100, 180, 220, 0.2);
+      border: 1px solid rgba(100, 180, 220, 0.4);
+      color: #80c8e8;
+    }
+    .dialog-tag--new {
+      background: rgba(120, 210, 120, 0.2);
+      border: 1px solid rgba(120, 210, 120, 0.4);
+      color: #90e090;
+    }
+
+    /* ── Inventory overlay ───────────────────────────── */
+    #inventory-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 100;
+      display: none;
+      justify-content: center;
+      pointer-events: auto;
+    }
+    .inventory-box {
+      min-width: 280px;
+      max-width: 400px;
+      background: rgba(8, 10, 18, 0.94);
+      border: 2px solid rgba(180, 170, 140, 0.35);
+      border-radius: 6px;
+      padding: 16px 20px 12px;
+      font-family: monospace;
+      color: #d0c8a0;
+    }
+    .inventory-title {
+      font-size: 13px;
+      color: #a89868;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-align: center;
+    }
+    .inventory-slots {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .inventory-slot {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 8px;
+      background: rgba(180, 170, 140, 0.06);
+      border-radius: 3px;
+      border-left: 2px solid transparent;
+      transition: background 0.1s, border-color 0.1s;
+    }
+    .inventory-slot.selected {
+      background: rgba(180, 170, 140, 0.18);
+      border-left-color: #c8a84e;
+    }
+    .inventory-pointer {
+      color: #c8a84e;
+      font-size: 14px;
+      width: 12px;
+      flex-shrink: 0;
+      visibility: hidden;
+    }
+    .inventory-slot.selected .inventory-pointer {
+      visibility: visible;
+    }
+    .inventory-icon {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .inventory-icon-fallback {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(180, 170, 140, 0.15);
+      border-radius: 3px;
+      font-size: 14px;
+      color: #a89868;
+      flex-shrink: 0;
+    }
+    .inventory-name {
+      font-size: 14px;
+      color: #e8e0c0;
+    }
+    .inventory-count {
+      font-size: 12px;
+      color: #a89868;
+    }
+    .inventory-empty {
+      text-align: center;
+      color: #706850;
+      font-size: 13px;
+      padding: 12px 0;
+    }
+    .inventory-hint {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(180, 170, 140, 0.15);
+      font-size: 11px;
+      color: #706850;
+      text-align: center;
+    }
+    .inventory-hint .key {
+      display: inline-block;
+      background: rgba(180, 170, 140, 0.15);
+      border: 1px solid rgba(180, 170, 140, 0.4);
+      border-radius: 3px;
+      padding: 0 5px;
+      margin-right: 3px;
+      font-size: 10px;
+      line-height: 1.6;
+    }
+
+    /* ── Quest log overlay ───────────────────────────── */
+    #questlog-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 100;
+      display: none;
+      justify-content: center;
+      pointer-events: auto;
+    }
+    .questlog-box {
+      min-width: 320px;
+      max-width: 480px;
+      background: rgba(8, 10, 18, 0.94);
+      border: 2px solid rgba(180, 170, 140, 0.35);
+      border-radius: 6px;
+      padding: 16px 20px 12px;
+      font-family: monospace;
+      color: #d0c8a0;
+    }
+    .questlog-title {
+      font-size: 13px;
+      color: #a89868;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-align: center;
+    }
+    .questlog-content {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .questlog-section {
+      font-size: 11px;
+      color: #706850;
+      text-align: center;
+      margin: 8px 0 6px;
+      letter-spacing: 1px;
+    }
+    .questlog-quest {
+      padding: 8px 10px;
+      margin: 4px 0;
+      background: rgba(180, 170, 140, 0.06);
+      border-radius: 3px;
+    }
+    .questlog-quest.completed {
+      opacity: 0.6;
+    }
+    .questlog-quest-title {
+      font-size: 14px;
+      color: #e8e0c0;
+      margin-bottom: 4px;
+    }
+    .questlog-objective {
+      font-size: 12px;
+      color: #b0a880;
+      line-height: 1.6;
+    }
+    .questlog-objective.done {
+      color: #708060;
+    }
+    .questlog-empty {
+      text-align: center;
+      color: #706850;
+      font-size: 13px;
+      padding: 12px 0;
+    }
+    .questlog-hint {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(180, 170, 140, 0.15);
+      font-size: 11px;
+      color: #706850;
+      text-align: center;
+    }
+    .questlog-hint .key {
+      display: inline-block;
+      background: rgba(180, 170, 140, 0.15);
+      border: 1px solid rgba(180, 170, 140, 0.4);
+      border-radius: 3px;
+      padding: 0 5px;
+      margin-right: 3px;
+      font-size: 10px;
+      line-height: 1.6;
+    }
+
+    /* ── Item preview overlay ────────────────────────── */
+    #item-preview-container {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 120;
+      display: none;         /* toggled by ItemPreviewUI */
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+      background: rgba(0, 0, 0, 0.45);
+    }
+    .item-preview-box {
+      min-width: 280px;
+      max-width: 360px;
+      background: rgba(8, 10, 18, 0.96);
+      border: 2px solid rgba(200, 180, 120, 0.45);
+      border-radius: 8px;
+      padding: 24px 28px 18px;
+      font-family: monospace;
+      color: #d0c8a0;
+      text-align: center;
+      animation: itemPreviewIn 0.35s ease-out;
+    }
+    @keyframes itemPreviewIn {
+      0% { opacity: 0; transform: scale(0.85) translateY(12px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .item-preview-label {
+      font-size: 11px;
+      color: #a89868;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+    }
+    .item-preview-icon {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 14px;
+      display: block;
+      filter: drop-shadow(0 0 10px rgba(255, 160, 40, 0.5));
+    }
+    .item-preview-name {
+      font-size: 17px;
+      color: #f0e8c0;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+    .item-preview-desc {
+      font-size: 13px;
+      color: #b0a880;
+      line-height: 1.6;
+      margin-bottom: 18px;
+      font-style: italic;
+    }
+    .item-preview-hint {
+      padding-top: 10px;
+      border-top: 1px solid rgba(180, 170, 140, 0.15);
+      font-size: 11px;
+      color: #706850;
+    }
+    .item-preview-hint .key {
+      display: inline-block;
+      background: rgba(180, 170, 140, 0.15);
+      border: 1px solid rgba(180, 170, 140, 0.4);
+      border-radius: 3px;
+      padding: 0 5px;
+      margin: 0 2px;
+      font-size: 10px;
+      line-height: 1.6;
+    }
+
+    /* ── Note parchment overlay ─────────────────────── */
+    #note-container {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 120;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+      background: rgba(0, 0, 0, 0.5);
+    }
+    .note-parchment {
+      min-width: 300px;
+      max-width: 420px;
+      background: linear-gradient(170deg, #f4e8c1 0%, #e8d8a8 40%, #dcc890 100%);
+      border: 2px solid rgba(140, 110, 60, 0.5);
+      border-radius: 4px;
+      padding: 28px 32px 20px;
+      font-family: monospace;
+      color: #4a3520;
+      box-shadow:
+        0 4px 24px rgba(0, 0, 0, 0.4),
+        inset 0 0 40px rgba(160, 130, 70, 0.15);
+      animation: noteIn 0.3s ease-out;
+    }
+    @keyframes noteIn {
+      0% { opacity: 0; transform: scale(0.9) translateY(10px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .note-title {
+      font-size: 15px;
+      font-weight: bold;
+      color: #3a2510;
+      text-align: center;
+      margin-bottom: 16px;
+      letter-spacing: 1px;
+    }
+    .note-body {
+      font-size: 12px;
+      line-height: 1.7;
+      color: #5a4030;
+    }
+    .note-body p {
+      margin: 0 0 10px;
+      text-indent: 1.5em;
+    }
+    .note-signature {
+      text-align: right;
+      font-style: italic;
+      margin-top: 14px;
+      color: #6a5040;
+    }
+    .note-hint {
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(140, 110, 60, 0.25);
+      font-size: 11px;
+      color: #8a7050;
+      text-align: center;
+    }
+    .note-hint .key {
+      display: inline-block;
+      background: rgba(140, 110, 60, 0.15);
+      border: 1px solid rgba(140, 110, 60, 0.4);
+      border-radius: 3px;
+      padding: 0 5px;
+      margin: 0 2px;
+      font-size: 10px;
+      line-height: 1.6;
+    }
+  </style>
+  <script type="module" crossorigin src="/doors/1/assets/index-BeRScFPe.js"></script>
+</head>
+<body>
+  <div id="game-container">
+    <a id="back-to-hub" href="/doors">&#8592; Doors</a>
+    <div id="loading">
+      <div class="loading-title">Door 1.</div>
+      <div class="loading-text">Загрузка...</div>
+    </div>
+    <div id="hud"></div>
+    <div id="debug-overlay"></div>
+    <!-- Interact prompt (shown when near an NPC) -->
+    <div id="interact-prompt">Нажмите <span class="key">E</span> — поговорить</div>
+
+    <!-- Dialog overlay (shown during conversation) -->
+    <div id="dialog-container">
+      <div class="dialog-box">
+        <button class="overlay-close dialog-close" aria-label="Закрыть">✕</button>
+        <div class="dialog-speaker"></div>
+        <div class="dialog-text"></div>
+        <ul class="dialog-choices"></ul>
+        <div class="dialog-controls">
+          <span class="keyboard-hint"><span class="key">↑</span><span class="key">↓</span> выбор</span>
+          <span class="keyboard-hint"><span class="key">Enter</span> подтвердить</span>
+          <span class="keyboard-hint"><span class="key">ESC</span> закрыть</span>
+          <span class="touch-hint">Нажмите на ответ</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Item preview overlay (shown when a special item is discovered) -->
+    <div id="item-preview-container">
+      <div class="item-preview-box">
+        <div class="item-preview-label">Найден новый предмет!</div>
+        <canvas class="item-preview-icon"></canvas>
+        <div class="item-preview-name"></div>
+        <div class="item-preview-desc"></div>
+        <div class="item-preview-hint">
+          <span class="keyboard-hint">Нажмите <span class="key">Enter</span> или <span class="key">ESC</span> чтобы продолжить</span>
+          <span class="touch-hint">Нажмите чтобы продолжить</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
